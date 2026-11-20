@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#059669" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="MeterPulse" />
+  <link id="dynamicManifestLink" rel="manifest" href="" />
+  <link id="dynamicAppleTouchIcon" rel="apple-touch-icon" href="" />
+  <link id="dynamicFavicon" rel="icon" type="image/svg+xml" href="" />
   <title>MeterPulse — Monthly Electricity & Free Unit Tracker</title>
   <!-- Load Inter font for crisp mobile legibility -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -434,6 +442,12 @@
           <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition cursor-pointer">
             Save Configuration
           </button>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            <strong>Web App Install Note:</strong> A dynamic Web App Manifest and SVG icon are built in automatically. Full browser PWA installation works when opened over <code class="font-mono">https://</code> (such as GitHub Pages) or <code class="font-mono">localhost</code>, rather than local <code class="font-mono">file://</code> paths.
+          </p>
         </div>
       </form>
     </div>
@@ -1116,18 +1130,73 @@
         const root = document.documentElement;
         const sun = document.getElementById('iconSun');
         const moon = document.getElementById('iconMoon');
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
         if (isDark) {
           root.classList.add('dark');
           sun.classList.remove('hidden');
           moon.classList.add('hidden');
+          if (themeMeta) themeMeta.setAttribute('content', '#020617');
         } else {
           root.classList.remove('dark');
           sun.classList.add('hidden');
           moon.classList.remove('hidden');
+          if (themeMeta) themeMeta.setAttribute('content', '#059669');
+        }
+      }
+
+      // Generate a crisp SVG app icon data URL and dynamic Blob Web App Manifest
+      let activeManifestUrl = null;
+      function setupWebAppManifest() {
+        try {
+          const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192"><rect width="192" height="192" rx="44" fill="#059669"/><path fill="#ffffff" d="M108 32L48 106h42l-6 54 60-74h-42l6-54z"/></svg>`;
+          const iconDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgIcon)}`;
+
+          const faviconEl = document.getElementById('dynamicFavicon');
+          const appleIconEl = document.getElementById('dynamicAppleTouchIcon');
+          if (faviconEl) faviconEl.href = iconDataUrl;
+          if (appleIconEl) appleIconEl.href = iconDataUrl;
+
+          const manifestObj = {
+            name: 'MeterPulse — Monthly Electricity & Free Unit Tracker',
+            short_name: 'MeterPulse',
+            description: 'Track manual monthly electricity meter readings against free units until bill generation on the 9th.',
+            start_url: '.',
+            display: 'standalone',
+            background_color: '#0f172a',
+            theme_color: '#059669',
+            icons: [
+              {
+                src: iconDataUrl,
+                sizes: '192x192',
+                type: 'image/svg+xml',
+                purpose: 'any maskable'
+              },
+              {
+                src: iconDataUrl,
+                sizes: '512x512',
+                type: 'image/svg+xml',
+                purpose: 'any maskable'
+              }
+            ]
+          };
+
+          const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+          if (activeManifestUrl) {
+            URL.revokeObjectURL(activeManifestUrl);
+          }
+          activeManifestUrl = URL.createObjectURL(manifestBlob);
+
+          const manifestLink = document.getElementById('dynamicManifestLink');
+          if (manifestLink) {
+            manifestLink.href = activeManifestUrl;
+          }
+        } catch (err) {
+          console.error('Failed to initialize web app manifest:', err);
         }
       }
 
       document.addEventListener('DOMContentLoaded', () => {
+        setupWebAppManifest();
         initTheme();
 
         let state = loadState();
